@@ -13,8 +13,9 @@ import android.view.ViewConfiguration;
 import java.util.Locale;
 
 /**
- * Vertical volume pill. Dragging is relative: put your finger anywhere and
- * slide, the level moves from where it already is (no jumping).
+ * Vertical volume pill. Dragging is relative: put your finger anywhere (on
+ * the pill or, via {@link #handleTouch}, anywhere on the screen) and slide;
+ * the level moves from where it already is (no jumping).
  */
 final class SliderView extends View {
     interface Listener {
@@ -23,7 +24,11 @@ final class SliderView extends View {
         /** @return the level that was actually applied */
         float onDrag(float level);
 
-        void onRelease(boolean moved);
+        /**
+         * @param moved      the finger actually dragged
+         * @param background the touch started outside the pill (anywhere on screen)
+         */
+        void onRelease(boolean moved, boolean background);
     }
 
     /** Light haptic "texture" ticks across the full range. */
@@ -45,6 +50,7 @@ final class SliderView extends View {
 
     private float downY, startLevel;
     private boolean moved;
+    private boolean background;
     private int lastDetent = -1;
 
     SliderView(Context context) {
@@ -86,12 +92,21 @@ final class SliderView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
+        return handleTouch(e, false);
+    }
+
+    /**
+     * Drives the slider from any view's touch stream. Only vertical deltas are
+     * used, so the coordinate space of {@code e} doesn't matter.
+     */
+    boolean handleTouch(MotionEvent e, boolean fromBackground) {
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                getParent().requestDisallowInterceptTouchEvent(true);
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
                 downY = e.getY();
                 startLevel = level;
                 moved = false;
+                background = fromBackground;
                 lastDetent = (int) (fraction() * DETENTS);
                 if (listener != null) listener.onTouchStart();
                 return true;
@@ -119,10 +134,10 @@ final class SliderView extends View {
 
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if (listener != null) listener.onRelease(moved);
+                if (listener != null) listener.onRelease(moved, background);
                 return true;
         }
-        return super.onTouchEvent(e);
+        return true;
     }
 
     private void tick() {

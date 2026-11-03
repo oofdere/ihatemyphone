@@ -45,7 +45,7 @@ public class SetupActivity extends Activity {
 
         title(col, "I Hate My Phone");
         body(col, "Volume + screenshot panel for phones with dead buttons. Invoke your assistant, "
-                + "drag the pill, let go, and it disappears.");
+                + "swipe up/down anywhere on the screen, let go, and it disappears.");
 
         // 1. Assistant
         heading(col, "1. Make this your digital assistant");

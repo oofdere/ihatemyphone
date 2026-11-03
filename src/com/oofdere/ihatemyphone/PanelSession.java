@@ -23,8 +23,9 @@ import android.widget.Toast;
 
 /**
  * The thing that pops up when you invoke the assistant: a slim volume pill on
- * the right edge plus a screenshot button. Everything outside the pill stays
- * visible and keeps receiving touches, so the phone works normally around it.
+ * the right edge plus a screenshot button, over a fully transparent window.
+ * Swiping up/down anywhere on the screen changes the volume; letting go (or
+ * tapping) makes it vanish so the phone is back to normal.
  */
 public class PanelSession extends VoiceInteractionSession {
     private static final long IDLE_HIDE_MS = 4000;
@@ -32,7 +33,6 @@ public class PanelSession extends VoiceInteractionSession {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     private final Runnable idleHide = this::hide;
-    private final int[] loc = new int[2];
 
     private Volume volume;
     private int stream;
@@ -96,9 +96,9 @@ public class PanelSession extends VoiceInteractionSession {
             }
 
             @Override
-            public void onRelease(boolean moved) {
+            public void onRelease(boolean moved, boolean background) {
                 volume.save();
-                if (moved) {
+                if (moved || background) {
                     hide();
                 } else {
                     scheduleIdleHide();
@@ -121,6 +121,10 @@ public class PanelSession extends VoiceInteractionSession {
                 Gravity.END | Gravity.CENTER_VERTICAL);
         lp.setMarginEnd(dp(12));
         root.addView(panel, lp);
+
+        // The whole (transparent) screen is a swipe surface for the slider.
+        // Touches the buttons don't take land here.
+        root.setOnTouchListener((v, e) -> slider.handleTouch(e, true));
         return root;
     }
 
@@ -156,18 +160,17 @@ public class PanelSession extends VoiceInteractionSession {
         assistShot = screenshot;
     }
 
-    /** Only the panel itself catches touches; everything else falls through to the app below. */
+    /**
+     * The whole screen catches touches while the panel is up (so you can swipe
+     * anywhere), but content insets cover everything so the app below is never
+     * resized or pushed around.
+     */
     @Override
     public void onComputeInsets(Insets outInsets) {
         View decor = getWindow().getWindow().getDecorView();
         outInsets.contentInsets.set(0, decor.getHeight(), 0, 0);
-        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION;
+        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_FRAME;
         outInsets.touchableRegion.setEmpty();
-        if (panel != null && panel.getWidth() > 0) {
-            panel.getLocationInWindow(loc);
-            outInsets.touchableRegion.set(loc[0], loc[1],
-                    loc[0] + panel.getWidth(), loc[1] + panel.getHeight());
-        }
     }
 
     private void refresh() {

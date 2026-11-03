@@ -3,9 +3,10 @@
 I hate my phone. Its volume buttons are dead. This is an Android "digital assistant" app that does
 just two things instead of being an assistant:
 
-- **Volume**: a slim pill slides in on the right edge. Drag anywhere on it and the volume follows your
-  finger. **Let go and it disappears.** The rest of the screen stays visible, and taps outside the pill
-  go straight through to whatever is under it. If you don't touch it, it goes away after 4 seconds.
+- **Volume**: a slim pill slides in on the right edge, over a fully transparent window. **Swipe up or
+  down anywhere on the screen** and the volume follows your finger, starting from where it already is.
+  **Let go and it disappears**, and the phone is back to normal. Tapping anywhere also closes it, and so
+  does leaving it alone for 4 seconds.
 - **Screenshot**: the button under the pill. The panel hides first, so it isn't in the picture.
 
 It also works from the lock screen, because Android draws assistant overlays above the lock screen.
@@ -89,8 +90,8 @@ Without those secrets, every build gets a throwaway key, and you have to uninsta
 | File | What it does |
 | --- | --- |
 | `AssistService.java` | The assistant service Android keeps running. It holds the fine-volume trim and handles the lock-screen shortcut. |
-| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Only the pill is touchable. |
-| `SliderView.java` | The pill. Relative drag, light haptic ticks, hides on release. |
+| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Swiping anywhere on screen drives the pill. |
+| `SliderView.java` | The pill. Relative drag (on the pill or anywhere on screen), light haptic ticks. |
 | `Volume.java` | Stream volume plus the sub-step trim. |
 | `ScreenshotService.java` | Optional accessibility service that takes the system screenshot. |
 | `Screenshots.java` | Fallback: saves the assistant screenshot to MediaStore. |
