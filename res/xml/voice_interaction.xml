@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="com.oofdere.ihatemyphone.PanelSessionService"
+    android:recognitionService="com.oofdere.ihatemyphone.StubRecognitionService"
+    android:settingsActivity="com.oofdere.ihatemyphone.SetupActivity"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true"
+    android:supportsLocalInteraction="false" />
