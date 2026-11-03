@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Listens to no events and cannot read window content.
+     It exists only to call performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT). -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/a11y_description"
+    android:summary="@string/a11y_summary"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:notificationTimeout="0"
+    android:settingsActivity="com.oofdere.ihatemyphone.SetupActivity" />

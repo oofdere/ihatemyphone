@@ -1,0 +1,60 @@
+# Builds the APK and publishes it as the "latest" GitHub release.
+#
+# Deliberately uses ZERO third-party (or even GitHub-made) actions: every step
+# is a plain shell command you can read right here. The only downloads are the
+# two Android SDK zips from dl.google.com, checked against pinned SHA-256s in
+# tools/fetch-sdk.sh.
+name: build-apk
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+            clone --depth 1 --branch "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY.git" src
+          cd src && test "$(git rev-parse HEAD)" = "$GITHUB_SHA" || echo "::warning::branch moved since this run started"
+
+      - name: Fetch Android SDK (pinned + checksummed)
+        working-directory: src
+        run: ./tools/fetch-sdk.sh
+
+      - name: Build
+        working-directory: src
+        env:
+          SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.SIGNING_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$SIGNING_KEYSTORE_B64" ]; then
+            mkdir -p keystore
+            echo "$SIGNING_KEYSTORE_B64" | base64 -d > keystore/release.jks
+          else
+            echo "::warning::No SIGNING_KEYSTORE_B64 secret: signing with a throwaway key. Each build will need an uninstall before installing. See README."
+            unset KEYSTORE_PASS
+          fi
+          VERSION_CODE="$GITHUB_RUN_NUMBER" VERSION_NAME="1.0.$GITHUB_RUN_NUMBER" ./build.sh
+          sha256sum build/ihatemyphone.apk | tee build/ihatemyphone.apk.sha256
+          rm -rf keystore
+
+      - name: Publish release
+        working-directory: src
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create latest build/ihatemyphone.apk build/ihatemyphone.apk.sha256 \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Latest build (#$GITHUB_RUN_NUMBER)" \
+            --notes "Built from $GITHUB_SHA. Download ihatemyphone.apk on your phone and open it to install."
