@@ -105,11 +105,6 @@ public class PanelSession extends VoiceInteractionSession {
             }
 
             @Override
-            public void onSideSwipe() {
-                takeScreenshot();
-            }
-
-            @Override
             public void onRelease(boolean moved, boolean background) {
                 volume.save();
                 if (moved || background) {

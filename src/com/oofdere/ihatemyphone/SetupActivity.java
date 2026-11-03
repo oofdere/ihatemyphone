@@ -55,9 +55,10 @@ public class SetupActivity extends Activity {
 
         // 2. Screenshots
         heading(col, "2. Screenshots");
-        body(col, "While the panel is open, swipe sideways anywhere (or tap the button under the slider). "
-                + "You get exactly what was on screen the moment you opened the panel, saved to "
-                + "Pictures/Screenshots.");
+        body(col, "Tap the button under the slider. You get what was on screen the moment the assistant "
+                + "was activated, before the panel came up, saved to Pictures/Screenshots. With the power "
+                + "button, that's the moment the hold registers. Shortening the hold duration (next to the "
+                + "power-button setting on many phones) makes it closer to when you pressed.");
         body(col, "For this, in the digital assistant settings from step 1, turn on \"Use text from screen\" "
                 + "and \"Use screenshot\".");
         button(col, "Open assistant settings", v -> openAssistantSettings());

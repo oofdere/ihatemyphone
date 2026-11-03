@@ -7,8 +7,8 @@ just two things instead of being an assistant:
   down anywhere on the screen** and the volume follows your finger, starting from where it already is.
   **Let go and it disappears**, and the phone is back to normal. Tapping anywhere also closes it, and so
   does leaving it alone for 4 seconds.
-- **Screenshot**: while the panel is open, **swipe sideways anywhere** (or tap the button under the pill).
-  You get what was on screen *the instant you opened the panel*, not a second later, and the panel isn't in it.
+- **Screenshot**: the button under the pill. You get what was on screen *the instant the assistant was
+  activated*, before the panel came up, so the panel isn't in it.
 
 It also works from the lock screen, because Android draws assistant overlays above the lock screen.
 
@@ -39,9 +39,13 @@ Caveats:
    - set *Press and hold power button → Digital assistant* (usually under Settings → System → Gestures)
 4. For screenshots, in the digital assistant settings turn on *Use text from screen* and *Use screenshot*.
    Android then captures the screen the moment you invoke the assistant, before the panel even appears,
-   and hands that capture to the app. A sideways swipe saves it to `Pictures/Screenshots`. If you never
-   swipe, it's thrown away. The app has no internet permission, so it can't go anywhere. Apps that block
+   and hands that capture to the app. The screenshot button saves it to `Pictures/Screenshots`. If you don't
+   tap the button, it's thrown away. The app has no internet permission, so it can't go anywhere. Apps that block
    screenshots (banking, for example) block this too.
+
+   With the power button, the capture happens when Android registers the *hold*, not when the button goes
+   down. Apps can't see power-button presses, so this is as early as it gets. Many phones let you shorten
+   the hold duration next to the power-button setting.
 5. Hit **Show the panel** in the app to try it.
 
 Side effect: Android also makes the assistant app the default *speech recognizer*, and it won't accept an
@@ -88,7 +92,7 @@ Without those secrets, every build gets a throwaway key, and you have to uninsta
 | File | What it does |
 | --- | --- |
 | `AssistService.java` | The assistant service Android keeps running. It holds the fine-volume trim and handles the lock-screen shortcut. |
-| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Up/down anywhere drives the pill, sideways saves the screenshot. |
+| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Swiping anywhere on screen drives the pill. |
 | `SliderView.java` | The pill. Relative drag (on the pill or anywhere on screen), light haptic ticks. |
 | `Volume.java` | Stream volume plus the sub-step trim. |
 | `Screenshots.java` | Saves the invocation-time screenshot to MediaStore. |
