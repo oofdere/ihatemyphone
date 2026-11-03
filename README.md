@@ -7,7 +7,8 @@ just two things instead of being an assistant:
   down anywhere on the screen** and the volume follows your finger, starting from where it already is.
   **Let go and it disappears**, and the phone is back to normal. Tapping anywhere also closes it, and so
   does leaving it alone for 4 seconds.
-- **Screenshot**: the button under the pill. The panel hides first, so it isn't in the picture.
+- **Screenshot**: while the panel is open, **swipe sideways anywhere** (or tap the button under the pill).
+  You get what was on screen *the instant you opened the panel*, not a second later, and the panel isn't in it.
 
 It also works from the lock screen, because Android draws assistant overlays above the lock screen.
 
@@ -36,14 +37,11 @@ Caveats:
    - swipe diagonally up from a bottom corner (gesture navigation)
    - long-press Home (3-button navigation)
    - set *Press and hold power button → Digital assistant* (usually under Settings → System → Gestures)
-4. Screenshots, pick one:
-   - **Best:** turn on the *I Hate My Phone screenshots* accessibility service. It subscribes to no events
-     and has `canRetrieveWindowContent=false`. All it does is call the system's own "take screenshot" action
-     (`ScreenshotService.java` is 40 lines, so you can check). On Android 13+ the switch may be greyed out
-     for sideloaded apps. To fix that, go to App info → ⋮ → *Allow restricted settings*.
-   - **Fallback:** in the digital assistant settings, turn on *Use text from screen* and *Use screenshot*.
-     Android then gives the assistant a screenshot when you open it, and the app saves that screenshot to
-     `Pictures/Screenshots`.
+4. For screenshots, in the digital assistant settings turn on *Use text from screen* and *Use screenshot*.
+   Android then captures the screen the moment you invoke the assistant, before the panel even appears,
+   and hands that capture to the app. A sideways swipe saves it to `Pictures/Screenshots`. If you never
+   swipe, it's thrown away. The app has no internet permission, so it can't go anywhere. Apps that block
+   screenshots (banking, for example) block this too.
 5. Hit **Show the panel** in the app to try it.
 
 Side effect: Android also makes the assistant app the default *speech recognizer*, and it won't accept an
@@ -90,11 +88,10 @@ Without those secrets, every build gets a throwaway key, and you have to uninsta
 | File | What it does |
 | --- | --- |
 | `AssistService.java` | The assistant service Android keeps running. It holds the fine-volume trim and handles the lock-screen shortcut. |
-| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Swiping anywhere on screen drives the pill. |
+| `PanelSession.java` | The overlay: pill, stream switch, and screenshot button. Up/down anywhere drives the pill, sideways saves the screenshot. |
 | `SliderView.java` | The pill. Relative drag (on the pill or anywhere on screen), light haptic ticks. |
 | `Volume.java` | Stream volume plus the sub-step trim. |
-| `ScreenshotService.java` | Optional accessibility service that takes the system screenshot. |
-| `Screenshots.java` | Fallback: saves the assistant screenshot to MediaStore. |
+| `Screenshots.java` | Saves the invocation-time screenshot to MediaStore. |
 | `StubRecognitionService.java` | The speech recognizer Android requires. It does nothing. |
 | `SetupActivity.java` | Setup checklist and test button. |
 

@@ -29,7 +29,14 @@ final class SliderView extends View {
          * @param background the touch started outside the pill (anywhere on screen)
          */
         void onRelease(boolean moved, boolean background);
+
+        /** A mostly-horizontal swipe (either direction) was completed. */
+        void onSideSwipe();
     }
+
+    private static final int UNDECIDED = 0, VERTICAL = 1, HORIZONTAL = 2;
+    /** How far a sideways swipe must travel to count, in dp. */
+    private static final float SIDE_SWIPE_DP = 64f;
 
     /** Light haptic "texture" ticks across the full range. */
     private static final int DETENTS = 40;
@@ -48,7 +55,8 @@ final class SliderView extends View {
     private float min = 0f, max = 15f, level = 0f;
     private boolean fine;
 
-    private float downY, startLevel;
+    private float downX, downY, startLevel;
+    private int axis = UNDECIDED;
     private boolean moved;
     private boolean background;
     private int lastDetent = -1;
@@ -96,25 +104,36 @@ final class SliderView extends View {
     }
 
     /**
-     * Drives the slider from any view's touch stream. Only vertical deltas are
-     * used, so the coordinate space of {@code e} doesn't matter.
+     * Drives the slider from any view's touch stream. Only deltas are used, so
+     * the coordinate space of {@code e} doesn't matter. Up/down changes the
+     * volume; a mostly sideways swipe is reported as {@link Listener#onSideSwipe}.
      */
     boolean handleTouch(MotionEvent e, boolean fromBackground) {
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
+                downX = e.getX();
                 downY = e.getY();
                 startLevel = level;
                 moved = false;
+                axis = UNDECIDED;
                 background = fromBackground;
                 lastDetent = (int) (fraction() * DETENTS);
                 if (listener != null) listener.onTouchStart();
                 return true;
 
             case MotionEvent.ACTION_MOVE: {
+                float dx = e.getX() - downX;
                 float dy = downY - e.getY();
-                if (!moved && Math.abs(dy) < touchSlop) return true;
-                moved = true;
+                if (axis == UNDECIDED) {
+                    if (Math.hypot(dx, dy) < touchSlop) return true;
+                    axis = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
+                    moved = true;
+                    // Start the volume drag from here so the slop doesn't cause a jump.
+                    downY = e.getY();
+                    dy = 0f;
+                }
+                if (axis == HORIZONTAL) return true;
                 float target = startLevel + dy / getHeight() * max;
                 // Re-anchor at the ends so reversing direction responds instantly.
                 if (target < min) {
@@ -133,6 +152,13 @@ final class SliderView extends View {
             }
 
             case MotionEvent.ACTION_UP:
+                if (axis == HORIZONTAL && Math.abs(e.getX() - downX) >= SIDE_SWIPE_DP * density) {
+                    if (listener != null) listener.onSideSwipe();
+                    return true;
+                }
+                if (listener != null) listener.onRelease(moved, background);
+                return true;
+
             case MotionEvent.ACTION_CANCEL:
                 if (listener != null) listener.onRelease(moved, background);
                 return true;

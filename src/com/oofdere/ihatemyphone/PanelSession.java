@@ -29,14 +29,23 @@ import android.widget.Toast;
  */
 public class PanelSession extends VoiceInteractionSession {
     private static final long IDLE_HIDE_MS = 4000;
-    private static final long SCREENSHOT_DELAY_MS = 500;
+    /** How long to wait for Android's screenshot if you swipe before it has arrived. */
+    private static final long SHOT_WAIT_MS = 1500;
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     private final Runnable idleHide = this::hide;
 
     private Volume volume;
     private int stream;
+    /** What was on screen the instant the assistant was invoked (before the panel showed). */
     private Bitmap assistShot;
+    private boolean shotArrived;
+    private boolean waitingForShot;
+    private final Runnable shotTimeout = () -> {
+        if (!waitingForShot) return;
+        waitingForShot = false;
+        noScreenshot(getContext().getApplicationContext());
+    };
 
     private LinearLayout panel;
     private TextView streamButton;
@@ -96,6 +105,11 @@ public class PanelSession extends VoiceInteractionSession {
             }
 
             @Override
+            public void onSideSwipe() {
+                takeScreenshot();
+            }
+
+            @Override
             public void onRelease(boolean moved, boolean background) {
                 volume.save();
                 if (moved || background) {
@@ -131,6 +145,8 @@ public class PanelSession extends VoiceInteractionSession {
     @Override
     public void onShow(Bundle args, int showFlags) {
         super.onShow(args, showFlags);
+        waitingForShot = false;
+        MAIN.removeCallbacks(shotTimeout);
         stream = volume.defaultStream();
         refresh();
         panel.setAlpha(0f);
@@ -144,6 +160,7 @@ public class PanelSession extends VoiceInteractionSession {
         MAIN.removeCallbacks(idleHide);
         if (volume != null) volume.save();
         assistShot = null;
+        shotArrived = false;
         super.onHide();
     }
 
@@ -154,10 +171,23 @@ public class PanelSession extends VoiceInteractionSession {
         super.onDestroy();
     }
 
-    /** Android passes the assistant a screenshot of whatever was on screen when it was invoked. */
+    /**
+     * Android passes the assistant a screenshot of whatever was on screen at the
+     * moment it was invoked (null if "Use screenshot" is off or the app blocks it).
+     */
     @Override
     public void onHandleScreenshot(Bitmap screenshot) {
+        Screenshots.recordAvailable(getContext(), screenshot != null);
+        if (waitingForShot) {
+            waitingForShot = false;
+            MAIN.removeCallbacks(shotTimeout);
+            Context app = getContext().getApplicationContext();
+            if (screenshot != null) Screenshots.save(app, screenshot);
+            else noScreenshot(app);
+            return;
+        }
         assistShot = screenshot;
+        shotArrived = true;
     }
 
     /**
@@ -194,27 +224,27 @@ public class PanelSession extends VoiceInteractionSession {
         MAIN.postDelayed(idleHide, IDLE_HIDE_MS);
     }
 
+    /** Saves what was on screen when the panel was opened, not what's there now. */
     private void takeScreenshot() {
         final Bitmap shot = assistShot;
+        final boolean arrived = shotArrived;
         final Context app = getContext().getApplicationContext();
         hide();
-        if (ScreenshotService.instance != null) {
-            // Wait for the panel to leave the screen so it isn't in the picture.
-            MAIN.postDelayed(() -> {
-                if (!ScreenshotService.takeScreenshot()) fallbackScreenshot(app, shot);
-            }, SCREENSHOT_DELAY_MS);
+        if (shot != null) {
+            Screenshots.save(app, shot);
+        } else if (arrived) {
+            noScreenshot(app);
         } else {
-            fallbackScreenshot(app, shot);
+            // Swiped faster than Android delivered it; save it when it lands.
+            waitingForShot = true;
+            MAIN.postDelayed(shotTimeout, SHOT_WAIT_MS);
         }
     }
 
-    private static void fallbackScreenshot(Context app, Bitmap shot) {
-        if (shot != null) {
-            Screenshots.save(app, shot);
-        } else {
-            Toast.makeText(app, "Screenshots aren't set up yet. Open I Hate My Phone for the 30-second fix.",
-                    Toast.LENGTH_LONG).show();
-        }
+    private static void noScreenshot(Context app) {
+        Toast.makeText(app, "Android didn't give a screenshot. Turn on \"Use screenshot\" and \"Use text "
+                + "from screen\" in Digital assistant settings. Some apps (banking etc.) block it.",
+                Toast.LENGTH_LONG).show();
     }
 
     private RippleDrawable ripple(int radius) {

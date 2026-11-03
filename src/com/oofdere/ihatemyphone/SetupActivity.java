@@ -3,12 +3,9 @@ package com.oofdere.ihatemyphone;
 import android.app.Activity;
 import android.app.role.RoleManager;
 import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
@@ -58,17 +55,13 @@ public class SetupActivity extends Activity {
 
         // 2. Screenshots
         heading(col, "2. Screenshots");
+        body(col, "While the panel is open, swipe sideways anywhere (or tap the button under the slider). "
+                + "You get exactly what was on screen the moment you opened the panel, saved to "
+                + "Pictures/Screenshots.");
+        body(col, "For this, in the digital assistant settings from step 1, turn on \"Use text from screen\" "
+                + "and \"Use screenshot\".");
+        button(col, "Open assistant settings", v -> openAssistantSettings());
         screenshotStatus = body(col, "");
-        body(col, "Best: turn on the \"" + getString(R.string.a11y_label) + "\" accessibility service. "
-                + "It listens to nothing and can't read your screen; it only presses the system's own "
-                + "screenshot action. On Android 13+, if the switch is greyed out, open App info → ⋮ → "
-                + "Allow restricted settings first.");
-        button(col, "Open accessibility settings", v -> open(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
-        button(col, "Open app info", v -> open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + getPackageName()))));
-        body(col, "No accessibility? It falls back to the screenshot Android gives assistants. For that, in "
-                + "the assistant settings from step 1 turn on \"Use text from screen\" and \"Use screenshot\". "
-                + "Those get saved to Pictures/Screenshots.");
 
         // 3. Fine volume
         heading(col, "3. Extra-fine media volume");
@@ -111,9 +104,10 @@ public class SetupActivity extends Activity {
         boolean assistant = rm != null && rm.isRoleHeld(RoleManager.ROLE_ASSISTANT);
         assistantStatus.setText(assistant ? "✅ This app is your assistant." : "❌ Not set as assistant yet.");
 
-        boolean a11y = accessibilityEnabled();
-        screenshotStatus.setText(a11y ? "✅ System screenshots enabled."
-                : "⚠️ Accessibility service off (using fallback).");
+        Boolean shots = Screenshots.lastAvailable(this);
+        screenshotStatus.setText(shots == null ? "Open the panel once and this will say whether screenshots work."
+                : shots ? "✅ Last time you opened the panel, Android provided a screenshot."
+                : "❌ Last time you opened the panel, Android gave no screenshot. Check the two settings above.");
 
         Volume vol = Volume.get(this);
         Boolean works = vol.trimWorks();
@@ -123,19 +117,6 @@ public class SetupActivity extends Activity {
         else if (works) s = "✅ On and working.";
         else s = "❌ This phone refused the global audio trim, using normal steps.";
         fineStatus.setText(s);
-    }
-
-    private boolean accessibilityEnabled() {
-        if (ScreenshotService.instance != null) return true;
-        String enabled = Settings.Secure.getString(getContentResolver(),
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        if (TextUtils.isEmpty(enabled)) return false;
-        ComponentName me = new ComponentName(this, ScreenshotService.class);
-        for (String part : enabled.split(":")) {
-            ComponentName cn = ComponentName.unflattenFromString(part);
-            if (me.equals(cn)) return true;
-        }
-        return false;
     }
 
     private void openAssistantSettings() {

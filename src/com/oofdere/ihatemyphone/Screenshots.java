@@ -16,9 +16,24 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/** Saves the screenshot Android hands to the assistant into Pictures/Screenshots. */
+/**
+ * Saves the screenshot Android hands to the assistant (captured the instant
+ * the assistant was invoked, before the panel appeared) into Pictures/Screenshots.
+ */
 final class Screenshots {
     private Screenshots() {
+    }
+
+    /** Remembers whether Android handed us a screenshot, for the setup screen. */
+    static void recordAvailable(Context context, boolean available) {
+        context.getSharedPreferences("screenshots", Context.MODE_PRIVATE).edit()
+                .putInt("last", available ? 1 : 0).apply();
+    }
+
+    /** null = never opened yet. */
+    static Boolean lastAvailable(Context context) {
+        int v = context.getSharedPreferences("screenshots", Context.MODE_PRIVATE).getInt("last", -1);
+        return v < 0 ? null : v == 1;
     }
 
     static void save(Context context, Bitmap shot) {

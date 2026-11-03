@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">I Hate My Phone</string>
-    <string name="a11y_label">I Hate My Phone screenshots</string>
-    <string name="a11y_summary">Lets the assistant panel take real system screenshots.</string>
-    <string name="a11y_description">This service listens to nothing and cannot read your screen. It only presses the system \"take screenshot\" action when you tap the screenshot button in the I Hate My Phone panel.</string>
 </resources>

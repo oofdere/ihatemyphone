@@ -19,6 +19,10 @@ public class AssistService extends VoiceInteractionService {
     private static final String EXTRA_STREAM = "android.media.EXTRA_VOLUME_STREAM_TYPE";
     private static final String EXTRA_VALUE = "android.media.EXTRA_VOLUME_STREAM_VALUE";
 
+    /** Ask for the screenshot too, same as a normal assistant gesture. */
+    private static final int SHOW_FLAGS = android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST
+            | android.service.voice.VoiceInteractionSession.SHOW_WITH_SCREENSHOT;
+
     static volatile AssistService instance;
 
     private final BroadcastReceiver volumeReceiver = new BroadcastReceiver() {
@@ -61,14 +65,14 @@ public class AssistService extends VoiceInteractionService {
     /** The lock screen's "voice assist" shortcut. */
     @Override
     public void onLaunchVoiceAssistFromKeyguard() {
-        showSession(new Bundle(), 0);
+        showSession(new Bundle(), SHOW_FLAGS);
     }
 
     /** Used by the setup screen's "Try it" button. */
     static boolean showPanel() {
         AssistService s = instance;
         if (s == null) return false;
-        s.showSession(new Bundle(), 0);
+        s.showSession(new Bundle(), SHOW_FLAGS);
         return true;
     }
 }
